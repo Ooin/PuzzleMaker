@@ -7,23 +7,26 @@ type KeyboardProps = {
 };
 
 export default function Keyboard({ maxDigit, onNumber, onClear }: KeyboardProps) {
-  const cols = maxDigit <= 3 ? maxDigit : 3;
-
   return (
     <div className="flex flex-col items-center gap-2">
-      <div
-        className="grid gap-1.5"
-        style={{ gridTemplateColumns: `repeat(${cols}, 44px)` }}
-      >
-        {Array.from({ length: maxDigit }, (_, i) => i + 1).map((n) => (
-          <button
-            key={n}
-            onClick={() => onNumber(n)}
-            className="w-11 h-11 bg-gray-700 hover:bg-gray-600 active:bg-gray-500 rounded-lg text-lg font-bold text-white transition-colors"
-          >
-            {n}
-          </button>
-        ))}
+      <div className="grid grid-cols-3 gap-1.5">
+        {Array.from({ length: 9 }, (_, i) => i + 1).map((n) => {
+          const disabled = n > maxDigit;
+          return (
+            <button
+              key={n}
+              onClick={() => onNumber(n)}
+              disabled={disabled}
+              className={`w-11 h-11 rounded-lg text-lg font-bold transition-colors ${
+                disabled
+                  ? "bg-gray-800 text-gray-600 cursor-default"
+                  : "bg-gray-700 hover:bg-gray-600 active:bg-gray-500 text-white cursor-pointer"
+              }`}
+            >
+              {n}
+            </button>
+          );
+        })}
       </div>
       <button
         onClick={onClear}

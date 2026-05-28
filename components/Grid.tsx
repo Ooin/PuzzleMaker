@@ -23,6 +23,7 @@ type GridProps = {
   selectedCell: [number, number] | null;
   edgeMode: boolean;
   violations?: Set<string>;
+  paused?: boolean;
   onCellClick: (row: number, col: number) => void;
   onCellRightClick?: (row: number, col: number) => void;
   onEdgeToggle?: (
@@ -38,6 +39,7 @@ export default function Grid({
   selectedCell,
   edgeMode,
   violations,
+  paused,
   onCellClick,
   onCellRightClick,
   onEdgeToggle,
@@ -175,7 +177,7 @@ export default function Grid({
                 onCellRightClick?.(i, j);
               }}
             >
-              {cell.disabled ? "" : cell.value ?? ""}
+              {paused ? "" : cell.disabled ? "" : cell.value ?? ""}
             </div>
           );
         })
