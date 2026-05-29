@@ -37,23 +37,22 @@ export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [paused, setPaused] = useState(false);
   const gridAreaRef = useRef<HTMLDivElement>(null);
-  const [gridPx, setGridPx] = useState(350);
+  const [gridPx, setGridPx] = useState(0);
   const gridRef = useRef(grid);
   gridRef.current = grid;
 
   useLayoutEffect(() => {
     const el = gridAreaRef.current;
     if (!el) return;
-    const w = el.offsetWidth;
-    const h = el.offsetHeight;
-    if (w > 0 && h > 0) setGridPx(Math.min(w, h));
+    const { width, height } = el.getBoundingClientRect();
+    if (width > 0 && height > 0) setGridPx(Math.min(width, height));
     const ro = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
       if (width > 0 && height > 0) setGridPx(Math.min(width, height));
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -301,8 +300,8 @@ export default function Home() {
           />
 
           <div className="flex-1 flex flex-col min-h-0">
-              <div className="flex items-center justify-between gap-2 px-1">
-                <div className="flex items-center gap-3">
+              <div className="flex items-start justify-between gap-2 px-1">
+                <div className="flex items-center gap-3 flex-wrap">
                   <Timer running={!paused && mode === "play" && !solved} />
                   {mode === "play" && (
                     <button
@@ -312,78 +311,30 @@ export default function Home() {
                       {paused ? "▶" : "⏸"}
                     </button>
                   )}
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setMode("design")}
-                    className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                      mode === "design"
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                    }`}
-                  >
-                    Design
-                  </button>
-                  <button
-                    onClick={() => setMode("play")}
-                    className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                      mode === "play"
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                    }`}
-                  >
-                    Play
-                  </button>
-                </div>
-              </div>
-
-              {solved && <Fireworks />}
-
-              <div ref={gridAreaRef} className="flex-1 min-h-0 flex items-center justify-center p-2">
-                <div className="overflow-hidden shrink-0" style={{ width: gridPx, height: gridPx, maxWidth: '100%', maxHeight: '100%' }}>
-                  <Grid
-                    grid={grid}
-                    gridSize={gridSize}
-                    selectedCell={selected}
-                    edgeMode={edgeMode && mode === "design"}
-                    violations={violations}
-                    paused={paused}
-                    onCellClick={clickCell}
-                    onCellRightClick={rightClickCell}
-                    onEdgeToggle={toggleEdge}
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-start justify-center gap-3 px-1 pb-1">
-                <Keyboard maxDigit={maxUsable} onNumber={inputNumber} onClear={handleClear} />
-
-                <div className="flex flex-col items-start gap-2 pt-1">
-                  {mode === "play" && (
-                    <div className="flex flex-col gap-1.5">
-                      <button
-                        onClick={clearPlayEntries}
-                        className="px-3 py-1 bg-yellow-700 hover:bg-yellow-600 active:bg-yellow-500 rounded text-xs text-white transition-colors"
-                      >
-                        Clear
-                      </button>
-                      <label className="flex items-center gap-1.5 text-xs text-gray-300 cursor-pointer select-none whitespace-nowrap">
-                        <input
-                          type="checkbox"
-                          checked={showViolations}
-                          onChange={(e) => setShowViolations(e.target.checked)}
-                          className="accent-blue-500"
-                        />
-                        Highlights
-                      </label>
-                    </div>
-                  )}
-
-                  {mode === "design" && (
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center gap-1.5 text-xs">
-                        <span className="text-gray-400">Size:</span>
-                        <div className="flex items-center gap-0.5">
+                  <div className="flex items-center gap-1.5 lg:hidden">
+                    {mode === "play" && (
+                      <>
+                        <button
+                          onClick={clearPlayEntries}
+                          className="px-3 py-1 bg-yellow-700 hover:bg-yellow-600 active:bg-yellow-500 rounded text-xs text-white transition-colors whitespace-nowrap"
+                        >
+                          Clear
+                        </button>
+                        <label className="flex items-center gap-1.5 text-xs text-gray-300 cursor-pointer select-none whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            checked={showViolations}
+                            onChange={(e) => setShowViolations(e.target.checked)}
+                            className="accent-blue-500"
+                          />
+                          Highlights
+                        </label>
+                      </>
+                    )}
+                    {mode === "design" && (
+                      <>
+                        <div className="flex items-center gap-1 text-xs">
+                          <span className="text-gray-400">Size:</span>
                           <button
                             onClick={() => changeSize(gridSize - 1)}
                             className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-white font-bold leading-none text-xs"
@@ -400,34 +351,147 @@ export default function Home() {
                             +
                           </button>
                         </div>
-                      </div>
-                      <label className="flex items-center gap-1.5 text-xs text-gray-300 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={edgeMode}
-                          onChange={(e) => setEdgeMode(e.target.checked)}
-                          className="accent-blue-500"
-                        />
-                        Edges
-                      </label>
-                      <label className="flex items-center gap-1.5 text-xs text-gray-300 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={disableMode}
-                          onChange={(e) => setDisableMode(e.target.checked)}
-                          className="accent-blue-500"
-                        />
-                        Disable
-                      </label>
-                      <button
-                        onClick={resetGrid}
-                        className="px-3 py-1 bg-red-800 hover:bg-red-700 active:bg-red-600 rounded text-xs text-white transition-colors"
-                      >
-                        Reset
-                      </button>
-                    </div>
-                  )}
+                        <label className="flex items-center gap-1.5 text-xs text-gray-300 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={edgeMode}
+                            onChange={(e) => setEdgeMode(e.target.checked)}
+                            className="accent-blue-500"
+                          />
+                          Edges
+                        </label>
+                        <label className="flex items-center gap-1.5 text-xs text-gray-300 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={disableMode}
+                            onChange={(e) => setDisableMode(e.target.checked)}
+                            className="accent-blue-500"
+                          />
+                          Disable
+                        </label>
+                        <button
+                          onClick={resetGrid}
+                          className="px-3 py-1 bg-red-800 hover:bg-red-700 active:bg-red-600 rounded text-xs text-white transition-colors whitespace-nowrap"
+                        >
+                          Reset
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
+                <div className="flex flex-col items-end gap-1">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setMode("design")}
+                      className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                        mode === "design"
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                      }`}
+                    >
+                      Design
+                    </button>
+                    <button
+                      onClick={() => setMode("play")}
+                      className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                        mode === "play"
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                      }`}
+                    >
+                      Play
+                    </button>
+                  </div>
+                  <div className="hidden lg:flex lg:items-center lg:gap-1.5">
+                    {mode === "play" && (
+                      <>
+                        <button
+                          onClick={clearPlayEntries}
+                          className="px-3 py-1 bg-yellow-700 hover:bg-yellow-600 active:bg-yellow-500 rounded text-xs text-white transition-colors whitespace-nowrap"
+                        >
+                          Clear
+                        </button>
+                        <label className="flex items-center gap-1.5 text-xs text-gray-300 cursor-pointer select-none whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            checked={showViolations}
+                            onChange={(e) => setShowViolations(e.target.checked)}
+                            className="accent-blue-500"
+                          />
+                          Highlights
+                        </label>
+                      </>
+                    )}
+                    {mode === "design" && (
+                      <>
+                        <div className="flex items-center gap-1 text-xs">
+                          <span className="text-gray-400">Size:</span>
+                          <button
+                            onClick={() => changeSize(gridSize - 1)}
+                            className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-white font-bold leading-none text-xs"
+                          >
+                            −
+                          </button>
+                          <span className="w-4 text-center text-white font-medium text-xs">
+                            {gridSize}
+                          </span>
+                          <button
+                            onClick={() => changeSize(gridSize + 1)}
+                            className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-white font-bold leading-none text-xs"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <label className="flex items-center gap-1.5 text-xs text-gray-300 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={edgeMode}
+                            onChange={(e) => setEdgeMode(e.target.checked)}
+                            className="accent-blue-500"
+                          />
+                          Edges
+                        </label>
+                        <label className="flex items-center gap-1.5 text-xs text-gray-300 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={disableMode}
+                            onChange={(e) => setDisableMode(e.target.checked)}
+                            className="accent-blue-500"
+                          />
+                          Disable
+                        </label>
+                        <button
+                          onClick={resetGrid}
+                          className="px-3 py-1 bg-red-800 hover:bg-red-700 active:bg-red-600 rounded text-xs text-white transition-colors whitespace-nowrap"
+                        >
+                          Reset
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {solved && <Fireworks />}
+
+              <div ref={gridAreaRef} className="flex-1 min-h-0 flex items-center justify-center">
+                <div className="overflow-hidden shrink-0" style={{ width: gridPx, height: gridPx, maxWidth: '100%', maxHeight: '100%' }}>
+                  <Grid
+                    grid={grid}
+                    gridSize={gridSize}
+                    selectedCell={selected}
+                    edgeMode={edgeMode && mode === "design"}
+                    violations={violations}
+                    paused={paused}
+                    onCellClick={clickCell}
+                    onCellRightClick={rightClickCell}
+                    onEdgeToggle={toggleEdge}
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-center px-1 pb-1">
+                <Keyboard maxDigit={maxUsable} onNumber={inputNumber} onClear={handleClear} />
               </div>
             </div>
         </div>
