@@ -128,7 +128,15 @@ export default function Grid({
           let fw: number;
           let outline: string | undefined;
 
-          if (selected && inViolation) {
+          if (cell.locked) {
+            bg = "#374151";
+            textColor = "#60a5fa";
+            fw = 700;
+          } else if (cell.disabled) {
+            bg = "#eab308";
+            textColor = "#000";
+            fw = 400;
+          } else if (selected && inViolation) {
             bg = "#fef08a";
             textColor = "#dc2626";
             fw = 700;
@@ -137,18 +145,10 @@ export default function Grid({
             bg = "#dc2626";
             textColor = "#fff";
             fw = 700;
-          } else if (cell.disabled) {
-            bg = "#eab308";
-            textColor = "#000";
-            fw = 400;
           } else if (selected) {
             bg = "#fef08a";
             textColor = "#000";
             fw = 400;
-          } else if (cell.locked) {
-            bg = "#374151";
-            textColor = "#60a5fa";
-            fw = 700;
           } else {
             bg = "#1f2937";
             textColor = "#d1d5db";

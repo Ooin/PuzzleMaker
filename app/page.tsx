@@ -8,7 +8,7 @@ import Fireworks from "@/components/Fireworks";
 import Auth from "@/components/Auth";
 import AuthStatus from "@/components/AuthStatus";
 import Sidebar from "@/components/Sidebar";
-import { findViolations, isComplete, getRoomSize } from "@/lib/rules";
+import { findViolations, isComplete } from "@/lib/rules";
 import { getPuzzle, type Puzzle } from "@/lib/supabase/puzzleStorage";
 import type { User } from "@supabase/supabase-js";
 
@@ -156,8 +156,7 @@ export default function Home() {
     (num: number) => {
       if (!selected) return;
       const [i, j] = selected;
-      const maxNum = getRoomSize(gridRef.current, i, j, gridSize);
-      if (num < 1 || num > maxNum) return;
+      if (num < 1 || num > gridSize) return;
       setGrid((prev) => {
         if (prev[i][j].disabled) return prev;
         const next = prev.map((r) => r.map((c) => ({ ...c })));
@@ -262,9 +261,7 @@ export default function Home() {
     return () => window.removeEventListener("keydown", handleKey);
   }, [selected, gridSize, inputNumber, handleClear]);
 
-  const maxUsable = selected
-    ? getRoomSize(grid, selected[0], selected[1], gridSize)
-    : gridSize;
+  const maxUsable = gridSize;
   const violations = mode === "play" && showViolations ? findViolations(grid, gridSize) : new Set<string>();
   const solved =
     mode === "play" &&
