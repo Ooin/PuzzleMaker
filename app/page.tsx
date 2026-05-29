@@ -44,8 +44,13 @@ export default function Home() {
   useLayoutEffect(() => {
     const el = gridAreaRef.current;
     if (!el) return;
-    const { width, height } = el.getBoundingClientRect();
-    if (width > 0 && height > 0) setGridPx(Math.min(width, height));
+    const rect = el.getBoundingClientRect();
+    const cs = getComputedStyle(el);
+    const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+    const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+    const w = rect.width - padX;
+    const h = rect.height - padY;
+    if (w > 0 && h > 0) setGridPx(Math.min(w, h));
     const ro = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
       if (width > 0 && height > 0) setGridPx(Math.min(width, height));
@@ -267,7 +272,7 @@ export default function Home() {
     grid.every((row) => row.every((c) => c.disabled || c.value !== null));
 
   return (
-    <main className="min-h-screen bg-gray-900 flex flex-col p-4 overflow-y-auto">
+    <main className="min-h-screen bg-gray-900 flex flex-col p-4 overflow-x-hidden w-full max-w-full">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           {user && (
@@ -288,7 +293,7 @@ export default function Home() {
           <Auth />
         </div>
       ) : (
-        <div className="flex-1 flex gap-4 min-h-0">
+        <div className="flex-1 flex gap-4 min-h-0 max-w-full">
           <Sidebar
             grid={grid}
             gridSize={gridSize}
@@ -299,9 +304,9 @@ export default function Home() {
             onClose={() => setSidebarOpen(false)}
           />
 
-          <div className="flex-1 flex flex-col min-h-0">
-              <div className="flex items-start justify-between gap-2 px-1">
-                <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex-1 flex flex-col min-h-0 max-w-full">
+              <div className="flex items-start gap-2 px-1">
+                <div className="flex items-center gap-3 flex-wrap flex-1 min-w-0">
                   <Timer running={!paused && mode === "play" && !solved} />
                   {mode === "play" && (
                     <button
@@ -379,7 +384,7 @@ export default function Home() {
                     )}
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-1">
+                <div className="flex flex-col items-end gap-1 shrink-0 ml-auto">
                   <div className="flex gap-2">
                     <button
                       onClick={() => setMode("design")}
@@ -474,7 +479,7 @@ export default function Home() {
 
               {solved && <Fireworks />}
 
-              <div ref={gridAreaRef} className="flex-1 min-h-0 flex items-center justify-center">
+              <div ref={gridAreaRef} className="flex-1 min-h-0 flex items-center justify-center p-4">
                 <div className="overflow-hidden shrink-0" style={{ width: gridPx, height: gridPx, maxWidth: '100%', maxHeight: '100%' }}>
                   <Grid
                     grid={grid}
