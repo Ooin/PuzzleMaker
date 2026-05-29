@@ -26,6 +26,15 @@ function findDups(
 export function findViolations(grid: CellData[][], gridSize: number): Set<string> {
   const violations = new Set<string>();
 
+  for (let r = 0; r < gridSize; r++) {
+    for (let c = 0; c < gridSize; c++) {
+      const cell = grid[r][c];
+      if (cell.disabled || cell.value === null) continue;
+      const maxDigit = getRoomSize(grid, r, c, gridSize);
+      if (cell.value > maxDigit) violations.add(`${r},${c}`);
+    }
+  }
+
   // horizontal segments — split where a cell has a highlighted right edge
   for (let row = 0; row < gridSize; row++) {
     let start = 0;

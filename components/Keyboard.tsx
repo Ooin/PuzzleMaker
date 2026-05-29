@@ -4,9 +4,11 @@ type KeyboardProps = {
   maxDigit: number;
   onNumber: (n: number) => void;
   onClear: () => void;
+  pencilMode: boolean;
+  onTogglePencil: (v: boolean) => void;
 };
 
-export default function Keyboard({ maxDigit, onNumber, onClear }: KeyboardProps) {
+export default function Keyboard({ maxDigit, onNumber, onClear, pencilMode, onTogglePencil }: KeyboardProps) {
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="grid grid-cols-3 gap-1.5">
@@ -28,12 +30,34 @@ export default function Keyboard({ maxDigit, onNumber, onClear }: KeyboardProps)
           );
         })}
       </div>
-      <button
-        onClick={onClear}
-        className="px-6 py-1.5 bg-red-900 hover:bg-red-800 active:bg-red-700 rounded text-sm text-white transition-colors"
-      >
-        Clear
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => onTogglePencil(false)}
+          className={`px-4 py-1.5 rounded text-xs font-medium transition-colors ${
+            !pencilMode
+              ? "bg-blue-600 text-white"
+              : "bg-gray-700 text-gray-400 hover:bg-gray-600"
+          }`}
+        >
+          Normal
+        </button>
+        <button
+          onClick={() => onTogglePencil(true)}
+          className={`px-4 py-1.5 rounded text-xs font-medium transition-colors ${
+            pencilMode
+              ? "bg-blue-600 text-white"
+              : "bg-gray-700 text-gray-400 hover:bg-gray-600"
+          }`}
+        >
+          Pencil
+        </button>
+        <button
+          onClick={onClear}
+          className="px-4 py-1.5 bg-red-900 hover:bg-red-800 active:bg-red-700 rounded text-sm text-white transition-colors"
+        >
+          Clear
+        </button>
+      </div>
     </div>
   );
 }
