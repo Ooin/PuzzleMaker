@@ -65,13 +65,20 @@ export default function Grid({
   const pencilFontSize = Math.max(6, cellSize * 0.2);
   const pencilCols = Math.ceil(Math.sqrt(gridSize));
 
-  const isPencilmarkCompleted = (row: number, col: number, num: number) => {
-    for (let j = 0; j < gridSize; j++) {
-      if (j !== col && grid[row][j].value === num) return true;
-    }
-    for (let i = 0; i < gridSize; i++) {
-      if (i !== row && grid[i][col].value === num) return true;
-    }
+  const pencilmarkInRoom = (row: number, col: number, num: number) => {
+    let c1 = col;
+    while (c1 > 0 && !grid[row][c1].edges.left) c1--;
+    let c2 = col;
+    while (c2 < gridSize - 1 && !grid[row][c2].edges.right) c2++;
+    let r1 = row;
+    while (r1 > 0 && !grid[r1][col].edges.top) r1--;
+    let r2 = row;
+    while (r2 < gridSize - 1 && !grid[r2][col].edges.bottom) r2++;
+
+    for (let c = c1; c <= c2; c++)
+      if (c !== col && grid[row][c].value === num) return true;
+    for (let r = r1; r <= r2; r++)
+      if (r !== row && grid[r][col].value === num) return true;
     return false;
   };
 
@@ -201,7 +208,7 @@ export default function Grid({
                     }}
                   >
                     {Array.from({ length: gridSize }, (_, idx) => idx + 1).map(n => {
-                      const hidden = hideCompletedPencilmarks && isPencilmarkCompleted(i, j, n);
+                      const hidden = hideCompletedPencilmarks && pencilmarkInRoom(i, j, n);
                       return (
                         <span
                           key={n}
