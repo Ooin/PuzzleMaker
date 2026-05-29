@@ -15,6 +15,7 @@ export type CellData = {
   locked: boolean;
   disabled: boolean;
   edges: CellEdges;
+  pencilmarks: number[];
 };
 
 type GridProps = {
@@ -24,6 +25,7 @@ type GridProps = {
   edgeMode: boolean;
   violations?: Set<string>;
   paused?: boolean;
+  hideCompletedPencilmarks?: boolean;
   onCellClick: (row: number, col: number) => void;
   onCellRightClick?: (row: number, col: number) => void;
   onEdgeToggle?: (
@@ -40,6 +42,7 @@ export default function Grid({
   edgeMode,
   violations,
   paused,
+  hideCompletedPencilmarks,
   onCellClick,
   onCellRightClick,
   onEdgeToggle,
@@ -59,6 +62,18 @@ export default function Grid({
   }, [gridSize]);
 
   const fontSize = Math.max(12, cellSize * 0.55);
+  const pencilFontSize = Math.max(6, cellSize * 0.2);
+  const pencilCols = Math.ceil(Math.sqrt(gridSize));
+
+  const isPencilmarkCompleted = (row: number, col: number, num: number) => {
+    for (let j = 0; j < gridSize; j++) {
+      if (j !== col && grid[row][j].value === num) return true;
+    }
+    for (let i = 0; i < gridSize; i++) {
+      if (i !== row && grid[i][col].value === num) return true;
+    }
+    return false;
+  };
 
   const handleClick = (
     e: MouseEvent<HTMLDivElement>,
@@ -77,7 +92,7 @@ export default function Grid({
         onEdgeToggle(i, j, "top");
         return;
       }
-      if (y > 48 - zone) {
+      if (y > cellSize - zone) {
         onEdgeToggle(i, j, "bottom");
         return;
       }
@@ -85,7 +100,7 @@ export default function Grid({
         onEdgeToggle(i, j, "left");
         return;
       }
-      if (x > 48 - zone) {
+      if (x > cellSize - zone) {
         onEdgeToggle(i, j, "right");
         return;
       }
@@ -177,7 +192,29 @@ export default function Grid({
                 onCellRightClick?.(i, j);
               }}
             >
-              {paused ? "" : cell.disabled ? "" : cell.value ?? ""}
+              {paused ? "" : cell.disabled ? "" : cell.value !== null ? cell.value : (
+                cell.pencilmarks?.length ? (
+                  <div
+                    className="grid w-full h-full place-items-center"
+                    style={{
+                      gridTemplateColumns: `repeat(${pencilCols}, 1fr)`,
+                    }}
+                  >
+                    {Array.from({ length: gridSize }, (_, idx) => idx + 1).map(n => {
+                      const hidden = hideCompletedPencilmarks && isPencilmarkCompleted(i, j, n);
+                      return (
+                        <span
+                          key={n}
+                          style={{ fontSize: pencilFontSize, visibility: hidden ? 'hidden' : 'visible' }}
+                          className="leading-none text-gray-400"
+                        >
+                          {cell.pencilmarks.includes(n) ? n : ""}
+                        </span>
+                      );
+                    })}
+                  </div>
+                ) : ""
+              )}
             </div>
           );
         })

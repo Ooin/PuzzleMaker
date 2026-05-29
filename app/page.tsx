@@ -21,6 +21,7 @@ const createGrid = (n: number): CellData[][] =>
       locked: false,
       disabled: false,
       edges: { top: false, right: false, bottom: false, left: false },
+      pencilmarks: [],
     }))
   );
 
@@ -36,6 +37,9 @@ export default function Home() {
   const [showViolations, setShowViolations] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [paused, setPaused] = useState(false);
+  const [pencilMode, setPencilMode] = useState(false);
+  const [hideCompletedPencilmarks, setHideCompletedPencilmarks] = useState(false);
+  const shiftRef = useRef(false);
   const gridAreaRef = useRef<HTMLDivElement>(null);
   const [gridPx, setGridPx] = useState(0);
   const gridRef = useRef(grid);
@@ -59,6 +63,11 @@ export default function Home() {
     return () => ro.disconnect();
   }, [user]);
 
+  const normalizeGrid = (data: CellData[][]) =>
+    data.map((row) =>
+      row.map((cell) => ({ ...cell, pencilmarks: cell.pencilmarks ?? [] }))
+    );
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const puzzleId = params.get("puzzle");
@@ -66,7 +75,7 @@ export default function Home() {
       getPuzzle(puzzleId).then((p) => {
         if (p) {
           setGridSize(p.grid_size);
-          setGrid(p.grid_data);
+          setGrid(normalizeGrid(p.grid_data));
           setMode("play");
         }
       });
@@ -75,7 +84,7 @@ export default function Home() {
 
   const handleLoadPuzzle = useCallback((puzzle: Puzzle) => {
     setGridSize(puzzle.grid_size);
-    setGrid(puzzle.grid_data);
+    setGrid(normalizeGrid(puzzle.grid_data));
     setCurrentPuzzleId(puzzle.id);
     setMode("play");
     setSelected([0, 0]);
@@ -159,17 +168,26 @@ export default function Home() {
       if (num < 1 || num > gridSize) return;
       setGrid((prev) => {
         if (prev[i][j].disabled) return prev;
-        const next = prev.map((r) => r.map((c) => ({ ...c })));
+        const next = prev.map((r) => r.map((c) => ({ ...c, pencilmarks: [...(c.pencilmarks ?? [])] })));
         if (mode === "design") {
           next[i][j] = { ...next[i][j], value: num, locked: true, disabled: false };
         } else {
           if (next[i][j].locked) return prev;
-          next[i][j].value = next[i][j].value === num ? null : num;
+          if (pencilMode || shiftRef.current) {
+            const idx = next[i][j].pencilmarks.indexOf(num);
+            if (idx >= 0) {
+              next[i][j].pencilmarks.splice(idx, 1);
+            } else if (next[i][j].pencilmarks.length < gridSize) {
+              next[i][j].pencilmarks.push(num);
+            }
+          } else {
+            next[i][j].value = next[i][j].value === num ? null : num;
+          }
         }
         return next;
       });
     },
-    [selected, mode, gridSize]
+    [selected, mode, gridSize, pencilMode]
   );
 
   const handleClear = useCallback(() => {
@@ -177,12 +195,16 @@ export default function Home() {
     const [i, j] = selected;
     setGrid((prev) => {
       if (prev[i][j].disabled) return prev;
-      const next = prev.map((r) => r.map((c) => ({ ...c })));
+      const next = prev.map((r) => r.map((c) => ({ ...c, pencilmarks: [...(c.pencilmarks ?? [])] })));
       if (mode === "design") {
         next[i][j] = { ...next[i][j], value: null, locked: false, disabled: false };
       } else {
         if (next[i][j].locked) return prev;
-        next[i][j].value = null;
+        if (next[i][j].value !== null) {
+          next[i][j].value = null;
+        } else {
+          next[i][j].pencilmarks = [];
+        }
       }
       return next;
     });
@@ -193,7 +215,7 @@ export default function Home() {
       prev.map((row) =>
         row.map((cell) =>
           !cell.locked && !cell.disabled
-            ? { ...cell, value: null }
+            ? { ...cell, value: null, pencilmarks: [] }
             : cell
         )
       )
@@ -201,10 +223,29 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === "Shift") shiftRef.current = true;
+    };
+    const up = (e: KeyboardEvent) => {
+      if (e.key === "Shift") shiftRef.current = false;
+    };
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+    };
+  }, []);
+
+  useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       if (target.tagName === "INPUT") return;
-      const n = parseInt(e.key);
+      let n = parseInt(e.key);
+      if (!(n >= 1 && n <= 9)) {
+        const m = e.code.match(/^Digit(\d)$/);
+        if (m) n = parseInt(m[1]);
+      }
       if (n >= 1 && n <= 9) {
         inputNumber(n);
         return;
@@ -331,6 +372,15 @@ export default function Home() {
                           />
                           Highlights
                         </label>
+                        <label className="flex items-center gap-1.5 text-xs text-gray-300 cursor-pointer select-none whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            checked={hideCompletedPencilmarks}
+                            onChange={(e) => setHideCompletedPencilmarks(e.target.checked)}
+                            className="accent-blue-500"
+                          />
+                          Auto-hide
+                        </label>
                       </>
                     )}
                     {mode === "design" && (
@@ -422,6 +472,15 @@ export default function Home() {
                           />
                           Highlights
                         </label>
+                        <label className="flex items-center gap-1.5 text-xs text-gray-300 cursor-pointer select-none whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            checked={hideCompletedPencilmarks}
+                            onChange={(e) => setHideCompletedPencilmarks(e.target.checked)}
+                            className="accent-blue-500"
+                          />
+                          Auto-hide
+                        </label>
                       </>
                     )}
                     {mode === "design" && (
@@ -485,6 +544,7 @@ export default function Home() {
                     edgeMode={edgeMode && mode === "design"}
                     violations={violations}
                     paused={paused}
+                    hideCompletedPencilmarks={hideCompletedPencilmarks}
                     onCellClick={clickCell}
                     onCellRightClick={rightClickCell}
                     onEdgeToggle={toggleEdge}
@@ -493,7 +553,7 @@ export default function Home() {
               </div>
 
               <div className="flex justify-center px-1 pb-1">
-                <Keyboard maxDigit={maxUsable} onNumber={inputNumber} onClear={handleClear} />
+                <Keyboard maxDigit={maxUsable} onNumber={inputNumber} onClear={handleClear} pencilMode={pencilMode} onTogglePencil={setPencilMode} />
               </div>
             </div>
         </div>
